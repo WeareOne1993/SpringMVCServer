@@ -25,67 +25,14 @@ import services.HibernateUtil;
 public class ProductDemoDAOImpl implements ProductDemoDAO
 {
     private static SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
-    private CountNumber countNumber;
-    private static List<ProductDemo> initializedListProductDemo;
-    private static List<StorageSearch> countList = new ArrayList<StorageSearch>();
-    private static List<Integer> initializedListDelete = new ArrayList<Integer>();
     
-    private static int isActiveInitializeList = 0;
-    private static int isActiveCountData = 0;
-    private static int isActiveCountWatch = 0;
-    private static int isActiveCountJewelry = 0;
+    private static List<StorageSearch> countListForSearchName = new ArrayList<StorageSearch>();
     
     private static int maxDataSize;
     private static int maxWatchSize;
     private static int maxJewelrySize;
 
-    //if = 1: queried to get max maxDataSize
-    public int getIsActiveCountData()
-    {
-        return isActiveCountData;
-    }
-    
-    public int getIsActiveCountWatch()
-    {
-        return isActiveCountWatch;
-    }
-    
-    public int getIsActiveCountJewelry()
-    {
-        return isActiveCountJewelry;
-    }
-    
-    public void setIsActiveCountData(int number)
-    {
-        this.isActiveCountData = number;
-    }
-    
-    public void setIsActiveCountWatch(int number)
-    {
-        this.isActiveCountWatch = number;
-    }
-    
-    public void setIsActiveCountJewelry(int number)
-    {
-        this.isActiveCountJewelry = number;
-    }
-    
-    public void setMaxDataSize(int maxDataSize)
-    {
-        this.maxDataSize = maxDataSize;
-    }
-    
-    public void setMaxWatchSize(int maxWatchSize)
-    {
-        this.maxWatchSize = maxWatchSize;
-    }
-    
-    public void setMaxJewelrySize(int maxJewelrySize)
-    {
-        this.maxJewelrySize = maxJewelrySize;
-    }
-    
-    public Integer addProductDemo(ProductDemo p)
+    public int addProductDemo(ProductDemo p)
     {
         Session session = sessionFactory.openSession();
         Transaction tr = null;
@@ -127,25 +74,15 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         {
             try
             {
-                maxDataSize = maxDataSize + 1;
-                maxWatchSize = maxWatchSize + 1;
+                
                 tr = session.beginTransaction();
                 
                 ProductDemo productDemo = new ProductDemo(name, type, brand, model, gender, movement, watchlabel, caseSize, caseThickness, caseMaterial, caseShape, dialType, dialColor, crystal, waterResistance, price, path);
                 productDemoId = (Integer) session.save(productDemo);
-
-                initializedListProductDemo.add(productDemo);
                 
                 tr.commit();
-                
-                int countListSize = countList.size();
-                for (int i = 0; i < countListSize; i++)
-                {
-                    if (name.toLowerCase().contains(countList.get(i).getName().toLowerCase()))
-                    {
-                        countList.get(i).setNumber(countList.get(i).getNumber() + 1);
-                    }
-                }
+                maxDataSize = maxDataSize + 1;
+                maxWatchSize = maxWatchSize + 1;
             }
             catch (HibernateException he)
             {
@@ -164,16 +101,14 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         {
             try
             {
-                maxDataSize = maxDataSize + 1;
-                maxJewelrySize = maxJewelrySize + 1;
                 tr = session.beginTransaction();
                 
                 ProductDemo productDemo = new ProductDemo(name, type,  metal, clasp, chainLength, chainType, width, length, rhodiumPlated, numberOfCenterRoundDiamonds, minimumCaratTotalWeight, minimumColor, minimumClarity, minimumCut, settingType, price, path);
                 productDemoId = (Integer) session.save(productDemo);
 
-                initializedListProductDemo.add(productDemo);
-
                 tr.commit();
+                maxDataSize = maxDataSize + 1;
+                maxJewelrySize = maxJewelrySize + 1;
             }
             catch (HibernateException he)
             {
@@ -187,19 +122,28 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
             {
                 session.close();
             }
-            
         }
+        else
+            return 244;
 
-        return productDemoId;
+        reCountListAfterAddOrUpdate(name);
+        
+        return 200;
     }
     
-    
-    public void updateProductDemo(ProductDemo p)
+    public int updateProductDemo(ProductDemo p)
     {
         Session session = sessionFactory.openSession();
-        Transaction tx = null;
+        Transaction tr = null;
         
-        Integer productDemoId = p.getId();
+        String oldName;
+        String oldType;
+        
+        int id = p.getId();
+        
+        boolean case1 = false;
+        boolean case2 = false;
+        
         String name = p.getName();
         String type = p.getType();
         String brand = p.getBrand();
@@ -235,8 +179,12 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         
         try
         {
-            tx = session.beginTransaction();
-            ProductDemo productDemo = session.get(ProductDemo.class, productDemoId);
+            tr = session.beginTransaction();
+            ProductDemo productDemo = session.get(ProductDemo.class, id);
+            
+            oldName = productDemo.getName();
+            oldType = productDemo.getType();
+            
             productDemo.setName(name);
             productDemo.setType(type);
             productDemo.setBrand(brand);
@@ -269,106 +217,98 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
             productDemo.setPrice(price);
             productDemo.setPath(path);
             
-            tx.commit();
+            if (type.equals("watch") && name != null && price != 0)
+            {
+                tr.commit();
+                
+                if (oldType.equals("jewelry"))
+                {
+                    maxWatchSize = maxWatchSize - 1;
+                    maxJewelrySize = maxJewelrySize + 1;
+                    case1 = true;
+                }
+            }
+            else if (type.equals("jewelry") && name != null && price != 0)
+            {
+                tr.commit();
+                
+                if (oldType.equals("watch"))
+                {
+                    maxWatchSize = maxWatchSize + 1;
+                    maxJewelrySize = maxJewelrySize - 1;
+                    case2 = true;
+                }
+            }
+            else
+                return 245;
             
-           updateProductIntoList(productDemo);
+            reCountListAfterRemove(oldName);
+            reCountListAfterAddOrUpdate(name);
             
-        }
-        catch (HibernateException he)
-        {
-            if (tx != null)
-                tx.rollback();
-            he.printStackTrace();
-        }
-        finally
-        {
-            session.close();
-        }
-
-    }
-
-    public List<ProductDemo> listProductDemo()
-    {
-        Session session = sessionFactory.openSession();
-        Transaction tr = null;
-        
-        try
-        {
-            tr = session.beginTransaction();
-//            Criteria crit = session.createCriteria(ProductDemo.class);
- //           List<ProductDemo> products = crit.list();
-            String hql = "from ProductDemo";
-            Query query = session.createQuery(hql);
+            return 200;            
             
-            return query.list();            
         }
         catch (HibernateException he)
         {
             if (tr != null)
                 tr.rollback();
+            
+            if (case1 == true)
+            {
+                maxWatchSize = maxWatchSize + 1;
+                maxJewelrySize = maxJewelrySize - 1;
+            }
+            else if (case2 = true)
+            {
+                maxWatchSize = maxWatchSize - 1;
+                maxJewelrySize = maxJewelrySize + 1;
+            }
+            
             he.printStackTrace();
-            return null;
         }
         finally
         {
             session.close();
         }
+
+        return 245;
     }
 
-    public void removeProductDemo(Integer id)
+    public int removeProductDemo(int id)
     {
         Session session = sessionFactory.openSession();
         Transaction tr = null;
         
         try
         {
-            maxDataSize = maxDataSize - 1;
-            tr = session.beginTransaction();
-            ProductDemo productDemo = session.get(ProductDemo.class, id);
-            if (productDemo != null)
-            {
-                session.delete(productDemo);
-                ;
-                
-                if (initializedListDelete.size() == 0)
-                {
-                    System.out.println("== 0");
-                
-                    initializedListDelete.add(id);                        
-                    shiftIndex(id);
-                    
-                }
-                else
-                {
-                    boolean isExistId = false;
-                    boolean isContinue = true;
-                    int index = 0;
-                    
-                    int listDeleteSize = initializedListDelete.size();
-                    
-                    while (index < listDeleteSize && isContinue == true)
-                    {
-                        
-                        if (initializedListDelete.get(index) == id)
-                        {
-                            isContinue = false;
-                        }
-                        
-                        index = index + 1;
-                    }
-                    
-                    if (isContinue == true)
-                    {
-                        shiftIndex(id);
-                        
-
-                        initializedListDelete.add(id);                        
-                        shiftIndex(id);
-                    }
-                } 
-                
-                tr.commit();
-            }            
+             tr = session.beginTransaction();
+             
+             ProductDemo productDemo = session.get(ProductDemo.class, id);
+             String name = productDemo.getName();
+             String type = productDemo.getType();
+             
+             if (productDemo == null)
+                 return 246;
+             else
+             {
+                 session.delete(productDemo);
+                 tr.commit();
+                 
+                 if (type.equals("watch"))
+                 {
+                     maxWatchSize = maxWatchSize - 1;
+                     maxDataSize = maxDataSize -1;
+                 }
+                 else if (type.equals("jewelry"))
+                 {
+                     maxJewelrySize = maxJewelrySize - 1;
+                     maxDataSize = maxDataSize -1;
+                 }
+                 
+                 reCountListAfterRemove(name);
+                 
+                 return 200;           
+             }
         }
         catch (HibernateException he)
         {
@@ -381,6 +321,8 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         {
             session.close();
         }
+        
+        return 246;
     }
     
     @SuppressWarnings("deprecation")
@@ -412,7 +354,6 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
                 maxPageSize = (int) maxDataSize/pageSize + 1;
             }
             
-            //page number nay vuot wa' so luong data
             if (pageNumber > maxPageSize || pageNumber == 0)
             {
                 return null;
@@ -423,8 +364,7 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
                                         .setFirstResult(((pageNumber-1)*pageSize))
                                         .setMaxResults(pageSize);
                 List<ProductDemo> productDemos = crit.list();
-                ProductDemo productDemoForCount = new ProductDemo(maxPageSize, maxDataSize);
-                productDemos.add(productDemoForCount); 
+                productDemos.add(new ProductDemo(maxPageSize, maxDataSize)); 
                 
                 return productDemos;
             }
@@ -443,168 +383,11 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         return null;
     }
     
-    //**************
-    public List<ProductDemo> returnProductsForOnePagee(int pageNumber, int pageSize)
-                             
-    {
-        int maxPageSize;
-        int loopSize;
-        
-        if (maxDataSize == 0)
-        {
-            List<ProductDemo> products = new ArrayList<ProductDemo>();
-            ProductDemo product = new ProductDemo(0, 0);
-            products.add(product);
-            
-            return products;
-        }
-        
-        if (maxDataSize%pageSize == 0)
-            maxPageSize = (int) maxDataSize/pageSize;
-        else
-            maxPageSize = (int) maxDataSize/pageSize + 1;
-        
-        
-        List<ProductDemo> products = new ArrayList<ProductDemo>();
-        
-        if (pageNumber*pageSize > maxDataSize)
-            loopSize = maxDataSize-(pageNumber-1)*pageSize;
-        else
-            loopSize = 8;
-        
-        for (int i = 0; i < loopSize; i++)
-        {
-            products.add(initializedListProductDemo.get((pageNumber-1)*pageSize+i));
-        }    
-
-
-        products.add(new ProductDemo(maxPageSize, maxDataSize));
-        
-        return products;
-    }
-    //**************
-    
-    public List<ProductDemo> returnProductsForSearchNameForOnePage(int pageNumber, int pageSize, String name)
-    {
-//        int countSearchedName = 0;
-//        int index = 0;
-//        int maxProductAddedSize = 0;
-//        List<ProductDemo> products = new ArrayList<ProductDemo>();
-//
-//        while (index < maxDataSize)
-//        {
-//            if (initializedListProductDemo.get(index).getName().toLowerCase().contains(name.toLowerCase()) == true)
-//            {
-//                countSearchedName = countSearchedName + 1;
-//                if (countSearchedName >= (pageNumber -1)*8+1 && maxProductAddedSize < 8)
-//                {
-//                    products.add(initializedListProductDemo.get(index));
-//                    maxProductAddedSize = maxProductAddedSize + 1;
-//                }
-//            } 
-//            
-//            index = index + 1;
-//        }
-//        
-//        if (countSearchedName == 0)
-//            products.add(new ProductDemo(0, 0));
-//        else if (countSearchedName%pageSize == 0)
-//            products.add(new ProductDemo(countSearchedName/pageSize, countSearchedName));
-//        else
-//            products.add(new ProductDemo(countSearchedName/pageSize+1, countSearchedName));
-//        
-//        return products;
-
-        
-        Session session = sessionFactory.openSession();
-        Transaction tr = null;
-        boolean isStore = false;
-        long maxSearchSize;
-        int s = 0;
-        
-        int maxPageSize;
-        
-        try
-        {
-            tr = session.beginTransaction();
-            if (countList.size() == 0)
-            {
-                maxSearchSize =  (Long) session.createCriteria(ProductDemo.class).add(Restrictions.like("name", "%" + name + "%")).setProjection(Projections.rowCount()).uniqueResult();
-                s = (int) maxSearchSize;
-                countList.add(new StorageSearch(name, s));
-            }
-            else
-            {
-                int storageSize = countList.size();
-                for (int i = 0; i < storageSize; i ++)
-                {
-                    if (countList.get(i).getName().equals(name))
-                    {
-                        isStore = true;
-                        s = countList.get(i).getNumber();
-                        break;
-                    }
-                }
-                
-                if (isStore == false)
-                {
-                    maxSearchSize =  (Long) session.createCriteria(ProductDemo.class).add(Restrictions.like("name", "%" + name + "%")).setProjection(Projections.rowCount()).uniqueResult();
-                    s = (int) maxSearchSize;
-                    countList.add(new StorageSearch(name, s));
-                }
-            }
-
-            if (s == 0)
-            {
-                List<ProductDemo> products = new ArrayList<ProductDemo>();
-                ProductDemo product = new ProductDemo(0, 0);
-                products.add(product);
-                return products;
-            }
-            
-            if (s%pageSize == 0)
-            {
-                maxPageSize = (int) s/pageSize;               
-            }
-            else
-            {
-                maxPageSize = (int) s/pageSize + 1;
-            }
-            
-            //page number nay vuot wa' so luong data
-            if (pageNumber > maxPageSize || pageNumber == 0)
-            {
-                return null;
-            }
-            else
-            {
-                Criteria crit = session.createCriteria(ProductDemo.class)
-                                        .add(Restrictions.like("name", "%" + name + "%"))
-                                        .setFirstResult(((pageNumber-1)*pageSize))
-                                        .setMaxResults(pageSize);
-                List<ProductDemo> productDemos = crit.list();
-                ProductDemo productDemoForCount = new ProductDemo(maxPageSize, s);
-                productDemos.add(productDemoForCount); 
-                return productDemos;
-            }
-        }
-        catch (HibernateException he)
-        {
-            if (tr != null)
-                tr.rollback();
-            he.printStackTrace();
-        }
-        finally
-        {
-            session.close();
-        }
-        
-        return null;
-    }
-  
     public List<ProductDemo> returnProductsWatchForOnePage(int pageNumber, int pageSize)
     {
         int maxPageSize;
+        Session session = sessionFactory.openSession();
+        Transaction tr = null;
         
         if (maxWatchSize%pageSize == 0)
         {
@@ -615,55 +398,45 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
             maxPageSize = (int) maxWatchSize/pageSize + 1;
         }
         
-        //page number nay vuot wa' so luong data
         if (pageNumber > maxPageSize || pageNumber == 0)
         {
             return null;
         }
         else
         {
-            List<ProductDemo> products = new ArrayList<ProductDemo>();
-            boolean isContinue = true;
-            int index = 0;
-            int indexGetCount = 0;
-            int maxIndexGet;
-            
-            if (pageNumber < maxPageSize)
+            try 
             {
-                maxIndexGet = pageNumber * 8;
-            }
-            else
-            {
-                maxIndexGet = maxWatchSize;
-            }
-            
-            while (index < maxDataSize && isContinue == true)
-            {
-                if (initializedListProductDemo.get(index).getType().equals("watch"))
-                {
-                    
-                    indexGetCount = indexGetCount + 1;
-                    
-                    if (indexGetCount >= (pageNumber-1)*8+1 && indexGetCount <= maxIndexGet)
-                        products.add(initializedListProductDemo.get(index));
-                }
+                tr = session.beginTransaction();
+                Criteria criteria = session.createCriteria(ProductDemo.class);
+                criteria.add(Restrictions.eq("type", "watch"))
+                        .setFirstResult(((pageNumber-1)*pageSize))
+                        .setMaxResults(pageSize);
+                List<ProductDemo> products = criteria.list();
+                products.add(new ProductDemo(maxPageSize, maxWatchSize));
                 
-                if (indexGetCount == maxIndexGet)
-                    isContinue = false;
-                
-                index = index + 1;
+                return products;
             }
-            
-            ProductDemo productDemoForCount = new ProductDemo(maxPageSize, maxWatchSize);
-            products.add(productDemoForCount); 
-            
-            return products;
+            catch (HibernateException he)
+            {
+                if (tr != null)
+                    tr.rollback();
+                
+                he.printStackTrace();
+            }
+            finally
+            {
+                session.close();
+            }
         }
+        
+        return null;
     }
 
     public List<ProductDemo> returnProductsJewelryForOnePage(int pageNumber, int pageSize)
     {
         int maxPageSize;
+        Session session = sessionFactory.openSession();
+        Transaction tr = null;
         
         if (maxJewelrySize%pageSize == 0)
         {
@@ -674,50 +447,132 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
             maxPageSize = (int) maxJewelrySize/pageSize + 1;
         }
         
-        //page number nay vuot wa' so luong data
         if (pageNumber > maxPageSize || pageNumber == 0)
         {
             return null;
         }
         else
         {
-            List<ProductDemo> products = new ArrayList<ProductDemo>();
-            boolean isContinue = true;
-            int index = 0;
-            int indexGetCount = 0;
-            int maxIndexGet;
-            
-            if (pageNumber < maxPageSize)
+            try 
             {
-                maxIndexGet = pageNumber * 8;
+                tr = session.beginTransaction();
+                Criteria criteria = session.createCriteria(ProductDemo.class);
+                criteria.add(Restrictions.eq("type", "jewelry"))
+                        .setFirstResult(((pageNumber-1)*pageSize))
+                        .setMaxResults(pageSize);
+                List<ProductDemo> products = criteria.list();
+                products.add(new ProductDemo(maxPageSize, maxJewelrySize));
+                
+                return products;
+            }
+            catch (HibernateException he)
+            {
+                if (tr != null)
+                    tr.rollback();
+                
+                he.printStackTrace();
+            }
+            finally
+            {
+                session.close();
+            }
+        }
+        
+        return null;
+    }
+
+    public List<ProductDemo> returnProductsForSearchNameForOnePage(int pageNumber, int pageSize, String name)
+    {
+        Session session = sessionFactory.openSession();
+        Transaction tr = null;
+        
+        int countSize = 0;
+        int maxPageSize;
+        List<ProductDemo> products;
+        boolean isFound = false;
+        printCountList();
+        
+        try
+        {
+            tr = session.beginTransaction();
+            
+            if (countListForSearchName.size() == 0)
+            {
+                countSize = countDataWithCorrespondingName(name);
+                countListForSearchName.add(new StorageSearch(name, countSize));
+                isFound = true;
             }
             else
             {
-                maxIndexGet = maxJewelrySize;
-            }
-            while (index < maxDataSize && isContinue == true)
-            {
-                if (initializedListProductDemo.get(index).getType().equals("jewelry"))
+                int index = 0;
+                int maxSize = countListForSearchName.size();
+                boolean isContinue = true;
+                
+                while (index < maxSize && isContinue == true)
                 {
-                    indexGetCount = indexGetCount + 1;
+                    if (countListForSearchName.get(index).getName().equals(name))
+                    {
+                        isContinue = false;
+                        countSize = countListForSearchName.get(index).getNumber();
+                        isFound = true;
+                    }
                     
-                    if (indexGetCount >= (pageNumber-1)*8+1 && indexGetCount <= maxIndexGet)
-                        products.add(initializedListProductDemo.get(index));
+                    index = index + 1;
                 }
-                
-                if (indexGetCount == maxIndexGet)
-                    isContinue = false;
-                
-                index = index + 1;
             }
             
-            ProductDemo productDemoForCount = new ProductDemo(maxPageSize, maxJewelrySize);
-            products.add(productDemoForCount); 
-            
-            return products;
-        }
-    }
+            if (isFound == false)
+            {
+                countSize = countDataWithCorrespondingName(name);
+                countListForSearchName.add(new StorageSearch(name, countSize));
+                isFound = true;
+            }
 
+            if (countSize == 0)
+            {
+                products = new ArrayList<ProductDemo>();
+                products.add(new ProductDemo(0, 0));
+                
+                return products;
+            }
+            else
+            {
+                if (countSize%pageSize == 0)
+                    maxPageSize = (int) countSize/pageSize;
+                else
+                    maxPageSize = (int) countSize/pageSize + 1;
+                
+                if (pageNumber > maxPageSize || pageNumber <= 0)
+                {
+                    products = new ArrayList<ProductDemo>();
+                    products.add(new ProductDemo(maxPageSize, countSize));
+                    
+                    return products;
+                }
+                else
+                {
+                    Criteria criteria = session.createCriteria(ProductDemo.class);
+                    products = criteria.add(Restrictions.like("name", "%" + name + "%")).setFirstResult((pageNumber-1)*pageSize).setMaxResults(pageSize).list();
+                    products.add(new ProductDemo(maxPageSize, countSize));
+                    
+                    return products;  
+                }
+            }
+        }
+        catch(HibernateException he)
+        {
+            if (tr != null)
+                tr.rollback();
+            he.printStackTrace();
+        }
+        finally
+        {
+            session.close();
+        }
+        
+        return null;
+    }
+    
     public List<ProductDemo> returnAmountOfProduct(int number)
     {
         Session session = sessionFactory.openSession();
@@ -727,24 +582,30 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         {
             tr = session.beginTransaction();
             int maxPageSize;
-
-            List<ProductDemo> products = session.createCriteria(ProductDemo.class)
-                                                .setFirstResult(0)
-                                                .setMaxResults(number)
-                                                .list();
-            
-            if (number%8 == 0)
+            List<ProductDemo> products;
+           
+            if (number <= 0)
             {
-                maxPageSize = number/8;
+                products = new ArrayList<ProductDemo>();
+                products.add(new ProductDemo(0,0));
             }
             else
             {
-                maxPageSize = number/8 + 1;
+                products = session.createCriteria(ProductDemo.class)
+                    .setFirstResult(0)
+                    .setMaxResults(number)
+                    .list();
+
+                if (number%8 == 0)
+                    maxPageSize = number/8;
+                else
+                    maxPageSize = number/8 + 1;
+                
+                ProductDemo p = new ProductDemo(maxPageSize, number);
+                
+                products.add(p);  
             }
             
-            ProductDemo p = new ProductDemo(maxPageSize, number);
-            
-            products.add(p);
             
             return products;
         }
@@ -762,7 +623,7 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         return null;
     }
     
-    public int getMaxDataSize()
+    public void getMaxDataSize()
     {
         Session session = sessionFactory.openSession();
         Transaction tr = null;
@@ -771,11 +632,9 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         try
         {
             tr = session.beginTransaction();
-            String hql = "Select count(*) from ProductDemo";
-            Query query = session.createQuery(hql);
-            maxSizeData = ((Long) query.uniqueResult()).intValue();
-            
-            return maxSizeData;
+            Criteria criteria = session.createCriteria(ProductDemo.class);
+            maxDataSize = ((Long) criteria.setProjection(Projections.rowCount()).uniqueResult()).intValue();
+            System.out.println("max data size = " + maxDataSize);
         }
         catch (HibernateException he)
         {
@@ -787,22 +646,19 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         {
             session.close();
         }
-        
-        return 0;
     }
 
-    public int getMaxWatchSize()
+    public void getMaxWatchSize()
     {
         Session session = sessionFactory.openSession();
         Transaction tr = null;
         
         try
         {
-            String hql = "Select count(*) from ProductDemo as p where p.type = 'watch'";
-            Query query = session.createQuery(hql);
-            int maxWatchSize = ((Long) query.uniqueResult()).intValue();
-            
-            return maxWatchSize;
+            tr = session.beginTransaction();
+            Criteria criteria = session.createCriteria(ProductDemo.class);
+            maxWatchSize = ((Long) criteria.add(Restrictions.eq("type", "watch")).setProjection(Projections.rowCount()).uniqueResult()).intValue();
+            System.out.println("max watch size = " + maxWatchSize);
         }
         catch (HibernateException he)
         {
@@ -814,51 +670,30 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         {
             session.close();
         }
-        
-        return 0;
     }
 
-    public int getMaxJewelrySize()
+    public void getMaxJewelrySize()
+    {
+        maxJewelrySize = maxDataSize - maxWatchSize;
+        System.out.println("max jewelry size = " + maxJewelrySize);
+    }
+
+    public int countDataWithCorrespondingName(String name)
     {
         Session session = sessionFactory.openSession();
         Transaction tr = null;
         
-        try
-        {
-            String hql = "Select count(*) from ProductDemo as p where p.type = 'jewelry'";
-            Query query = session.createQuery(hql);
-            int maxWatchSize = ((Long) query.uniqueResult()).intValue();
-            
-            return maxWatchSize;
-        }
-        catch (HibernateException he)
-        {
-            if (tr != null)
-                tr.rollback();
-            he.printStackTrace();
-        }
-        finally
-        {
-            session.close();
-        }
-        
-        return 0;
-    }
-
-    public void initializeListProduct()
-    {
-        Session session = sessionFactory.openSession();
-        Transaction tr = null;
+        int countSize = 0;
         
         try 
         {
             tr = session.beginTransaction();
             
-            Criteria crit = session.createCriteria(ProductDemo.class);            
- //           initializedListProductDemo = crit.setFirstResult(0).setMaxResults(100).list();
-            initializedListProductDemo = crit.list();
+            Criteria criteria = session.createCriteria(ProductDemo.class);
+            countSize = ((Long) criteria.add(Restrictions.like("name", "%" + name + "%")).setProjection(Projections.rowCount()).uniqueResult()).intValue();
+            System.out.println("count size = " + countSize);
         }
-        catch (HibernateException he)
+        catch(HibernateException he)
         {
             if (tr != null)
                 tr.rollback();
@@ -868,68 +703,41 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         {
             session.close();
         }
+        
+        return countSize;
+    } 
+
+    public void printCountList()
+    {
+        System.out.println("count List Size = " + countListForSearchName.size());
+        
+        for (int i = 0; i < countListForSearchName.size(); i++)
+        {
+            System.out.println("name = " + countListForSearchName.get(i).getName() + "\tsize = " + countListForSearchName.get(i).getNumber());
+        }
+        
+        System.out.println("\n");
     }
     
-    public String getCurrentTimeStamp()
+    public void reCountListAfterAddOrUpdate(String name)
     {
-        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
-    }
-
-    public void getInfoMemory()
-    {
-        Runtime rt = Runtime.getRuntime();
-        long totalMem = rt.totalMemory();
-        long maxMem = rt.maxMemory();
-        long freeMem = rt.freeMemory();
-        double megs = 1048576.0;
-
-        System.out.println ("Total Memory: " + totalMem + " (" + (totalMem/megs) + " MiB)");
-        System.out.println ("Max Memory:   " + maxMem + " (" + (maxMem/megs) + " MiB)");
-        System.out.println ("Free Memory:  " + freeMem + " (" + (freeMem/megs) + " MiB)");
-        
-        //Get the jvm heap size.
-        long heapSize = Runtime.getRuntime().totalMemory();
-
-        //Print the jvm heap size.
-        System.out.println("Heap Size = " + heapSize/megs);
-    }
-
-    public void shiftIndex(int id)
-    {
-        boolean isContinue = true;
-        int index = 0;
-        int startShift = -1;
-        
-        while (isContinue == true && index <= maxDataSize)
+        for (int i = 0; i < countListForSearchName.size(); i ++)
         {
-            if (initializedListProductDemo.get(index).getId() == id)
+            if (name.toLowerCase().contains(countListForSearchName.get(i).getName().toLowerCase()) == true)
             {
-                startShift = index;
-                isContinue = false;
-            }
-            
-            index = index + 1;
-        }
-        
-        isContinue = true;
-        
-        while (isContinue == true && startShift < maxDataSize && startShift != -1)
-        {
-            initializedListProductDemo.set(startShift, initializedListProductDemo.get(startShift+1));
-            startShift = startShift + 1;
-        }
-       
-        initializedListProductDemo.remove(maxDataSize);                   
-    }
-    
-    public void updateProductIntoList(ProductDemo p)
-    {
-        for (int i = 0; i < maxDataSize; i++)
-        {
-            if (initializedListProductDemo.get(i).getId() == p.getId())
-            {
-                initializedListProductDemo.set(i, p);
+                countListForSearchName.get(i).setNumber(countListForSearchName.get(i).getNumber()+1);
             }
         }
+    }
+
+    public void reCountListAfterRemove(String name)
+    {
+        for (int i = 0; i < countListForSearchName.size(); i ++)
+        {
+            if (name.toLowerCase().contains(countListForSearchName.get(i).getName().toLowerCase()) == true)
+            {
+                countListForSearchName.get(i).setNumber(countListForSearchName.get(i).getNumber()-1);
+            }
+        }       
     }
 }

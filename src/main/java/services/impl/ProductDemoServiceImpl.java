@@ -21,25 +21,22 @@ public class ProductDemoServiceImpl implements ProductDemoService
     }
     
     @Transactional
-    public Integer addProductDemo(ProductDemo p) {
+    public int addProductDemo(ProductDemo p)
+    {
         return this.productDemoDAO.addProductDemo(p);
     }
-    
+
     @Transactional
-    public List<ProductDemo> listProductDemo() {
-        return this.productDemoDAO.listProductDemo();
-    }
-    
-    @Transactional
-    public void updateProductDemo(ProductDemo p) {
-        this.productDemoDAO.updateProductDemo(p);
+    public int updateProductDemo(ProductDemo p)
+    {
+        return this.productDemoDAO.updateProductDemo(p);
 
     }
     
     @Transactional
-    public void removeProductDemo(Integer id) {
-        this.productDemoDAO.removeProductDemo(id);
-
+    public int removeProductDemo(int id)
+    {
+        return this.productDemoDAO.removeProductDemo(id);
     }
     
     @Transactional
@@ -47,19 +44,14 @@ public class ProductDemoServiceImpl implements ProductDemoService
     {
         return this.productDemoDAO.returnProductsForOnePage(pageNumber, pageSize);
     }
-    
-    public List<ProductDemo> returnProductsForOnePagee(int pageNumber, int pageSize)
-    {
-        return this.productDemoDAO.returnProductsForOnePagee(pageNumber, pageSize);
-    }
-    
-   
+
+    @Transactional
     public List<ProductDemo> returnProductsWatchForOnePage(int pageNumber, int pageSize)
     {
         return this.productDemoDAO.returnProductsWatchForOnePage(pageNumber, pageSize);
     }    
     
-    
+    @Transactional
     public List<ProductDemo> returnProductsJewelryForOnePage(int pageNumber, int pageSize)
     {
         return this.productDemoDAO.returnProductsJewelryForOnePage(pageNumber, pageSize);
@@ -80,49 +72,17 @@ public class ProductDemoServiceImpl implements ProductDemoService
     @Transactional
     public void getMaxDataSize()
     {
-        if (this.productDemoDAO.getIsActiveCountData() == 0)
-        {
-           this.productDemoDAO.setMaxDataSize(this.productDemoDAO.getMaxDataSize());
-           this.productDemoDAO.setIsActiveCountData(1);
-        }
+        this.productDemoDAO.getMaxDataSize();
     }
         
     @Transactional
     public void getMaxWatchSize()
     {
-        if(this.productDemoDAO.getIsActiveCountWatch() == 0)
-        {
-            this.productDemoDAO.setMaxWatchSize(this.productDemoDAO.getMaxWatchSize());
-            this.productDemoDAO.setIsActiveCountWatch(1);
-        }
+       this.productDemoDAO.getMaxWatchSize();
     }
     
-    @Transactional
     public void getMaxJewelrySize()
     {
-        if (this.productDemoDAO.getIsActiveCountJewelry() == 0)
-        {
-            this.productDemoDAO.setMaxJewelrySize(this.productDemoDAO.getMaxJewelrySize());
-            this.productDemoDAO.setIsActiveCountJewelry(1);
-        }
+       this.productDemoDAO.getMaxJewelrySize();
     }
-    
-    @Transactional
-    public void initializeListProduct()
-    {
-        this.productDemoDAO.initializeListProduct();
-    }
-    
-    public String getCurrentTimeStamp()
-    {
-        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
-    }
-    
-    public void getInfoMemory()
-    {
-        this.productDemoDAO.getInfoMemory();
-    }
-    
-    
-    
 }

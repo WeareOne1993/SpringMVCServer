@@ -22,10 +22,10 @@ public class InitializeOnStartup implements ApplicationListener<ContextRefreshed
     
     public void onApplicationEvent(ContextRefreshedEvent arg0)
     {
+        System.out.println("Initializing...");
         this.productDemoService.getMaxDataSize();
         this.productDemoService.getMaxWatchSize();
         this.productDemoService.getMaxJewelrySize();
-        this.productDemoService.initializeListProduct();
         System.out.println("initialization finished");
     }
     

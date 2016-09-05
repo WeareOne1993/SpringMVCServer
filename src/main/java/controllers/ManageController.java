@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import models.ProductDemo;
+import models.ResponseStatus;
 import services.ProductDemoService;
 
 @RestController
@@ -40,108 +41,111 @@ public class ManageController
     
     
     /*
-     * return list product: watch and jewelry
-     * URL    : localhost:8080/SpringMVCRestAPIDemo/products
-     * Method : GET
-     * */
-    @CrossOrigin(origins="http://localhost:9000")
-    @RequestMapping(value="/products", method=RequestMethod.GET)
-    public List<ProductDemo> listProductDemo()
-    {
-        return this.productDemoService.listProductDemo();
-    }
-    
-    
-    /*
-     * add a new product: watch or jewelry
-     * URL    : localhost:8080/SptirngMVCRestAPIDemo/product/add
-     * Method : POST
+     * add new product to database
+     * return: status
+     * URL   : localhost:8080/SptirngMVCRestAPIDemo/product/add
+     * method: POST
      * */
     @CrossOrigin(origins="http://localhost:9000")
     @RequestMapping(value="/product/add", method=RequestMethod.POST, headers="Accept=application/json")
-    public List<ProductDemo> addProductDemo(@RequestBody ProductDemo pd)
+    public ResponseStatus addProductDemo(@RequestBody ProductDemo p)
     {
-        Integer productDemoNewId = productDemoService.addProductDemo(pd);
-        List<ProductDemo> products = this.productDemoService.returnProductsForOnePagee(1, pageSize);
-        return products;
+        ResponseStatus responseStatus;
+        int number = this.productDemoService.addProductDemo(p);
+        
+        if (number == 200)
+            responseStatus = new ResponseStatus(200, "Ok, added!");
+        else
+            responseStatus = new ResponseStatus(244, "fail to add new product");
+        
+        return responseStatus;
     }
+
     
     
     /*
-     *update a current product: watch or jewelry
-     * URL    : localhost:8080/SptirngMVCRestAPIDemo/product/update
-     * Method : PUT
+     * update an exist product from database
+     * return: 200 if ok - 245 if update failed
+     * URL   : localhost:8080/SptirngMVCRestAPIDemo/product/update
+     * method: PUT
      * */
     @CrossOrigin(origins="http://localhost:9000")
     @RequestMapping(value="/product/update", method=RequestMethod.PUT, headers="Accept=application/json")
-    public Integer updateProductDemo(@RequestBody ProductDemo pd)
+    public ResponseStatus updateProductDemo(@RequestBody ProductDemo p)
     {
-        this.productDemoService.updateProductDemo(pd);
+        ResponseStatus responseStatus;
+        int number = this.productDemoService.updateProductDemo(p);
+
+        if (number == 200)
+            responseStatus = new ResponseStatus(200, "Ok, updated!");
+        else
+            responseStatus = new ResponseStatus(245, "fail to update product");
         
-        return 200;
+        return responseStatus;
     } 
     
     
     
     /*
-     * remove a product
-     * URL    : localhost:8080/SpringMVCRestAPIDemo/product/remove/{id}
+     * remove an exist product from database
+     * return: 200 if ok - 246 if remove failed
+     * URL   : localhost:8080/SptirngMVCRestAPIDemo/pr  oduct/remove/{id}
+     * method: DELETE
      * */
     @CrossOrigin(origins="http://localhost:9000")
     @RequestMapping(value="/product/remove/{id}", method=RequestMethod.DELETE)
-    public ProductDemo removeProductDemo(@PathVariable int id)
+    public ResponseStatus removeProductDemo(@PathVariable int id)
     {
-//        this.productDemoService.getMaxDataSize();
-        this.productDemoService.removeProductDemo(id);
-        ProductDemo p = new ProductDemo(0, 0);
-        return p;
+        ResponseStatus responseStatus;
+        int number = this.productDemoService.removeProductDemo(id); 
+
+        if (number == 200)
+            responseStatus = new ResponseStatus(200, "Ok, removed!");
+        else
+            responseStatus = new ResponseStatus(246, "fail to remove product");
+        
+        return responseStatus;
     }
     
     
+    
     /*
-     * return product for one page = page size + + return max page number
-     * URL    : localhost:8080/SpringMVCRestAPIDemo/product/page/{i}
-     * method : GET
+     * return list of products corresponding with page number called
+     * return: list productDemo
+     * URL   : localhost:8080/SptirngMVCRestAPIDemo/product/page/{pageNumber}
+     * method: GET
      * */
     @CrossOrigin(origins="http://localhost:9000")
     @RequestMapping(value="/product/page/{pageNumber}", method=RequestMethod.GET)
     public List<ProductDemo> returnProductsForOnePage(@PathVariable int pageNumber)
     {
-        this.productDemoService.getMaxDataSize();
         List<ProductDemo> products = this.productDemoService.returnProductsForOnePage(pageNumber, pageSize);
-  //      this.productDemoService.getInfoMemory();
+
         return products;
     }
-    
-    @CrossOrigin(origins="http://localhost:9000")
-    @RequestMapping(value="/product/pagee/{pageNumber}", method=RequestMethod.GET)
-    public List<ProductDemo> returnProductsForOnePagee(@PathVariable int pageNumber)
-    {
-//        this.productDemoService.getMaxDataSize();
-        List<ProductDemo> products = this.productDemoService.returnProductsForOnePagee(pageNumber, pageSize);
-        //this.productDemoService.getInfoMemory();
-        return products;
-    }
+
     
     
     /*
-     * return watch products for search name in one page + return max page number
-     * URL    : localhost:8080/SpringMVCRestAPIDemo/product/watch/page/{pageNumber}
-     * method : GET
+     * return list of watch corresponding with page number called
+     * return: list watch 
+     * URL   : localhost:8080/SpringMVCRestAPIDemo/product/watch/page/{pageNumber}
+     * method: GET
      * */
     @CrossOrigin(origins="http://localhost:9000")
     @RequestMapping(value="/product/watch/page/{pageNumber}", method=RequestMethod.GET)
     public List<ProductDemo> returnProductsWatchForOnePage(@PathVariable int pageNumber)
     {
-  //      countNumber.printCount();
         return this.productDemoService.returnProductsWatchForOnePage(pageNumber, pageSize);
     }
     
     
+    
     /*
-     * return jewelry products for search name in one page + return max page number
-     * URL    : localhost:8080/SpringMVCRestAPIDemo/product/jewelry/page/{pageNumber}
-     * method : GET
+     * return list of jewelry corresponding with page number called
+     * return: list jewelry 
+     * URL   : localhost:8080/SpringMVCRestAPIDemo/product/jewelery/page/{pageNumber}
+     * method: GET
      * */
     @CrossOrigin(origins="http://localhost:9000")
     @RequestMapping(value="/product/jewelry/page/{pageNumber}", method=RequestMethod.GET)
@@ -151,10 +155,12 @@ public class ManageController
     }
     
     
+    
     /*
-     * return WATCH products for search name in one page + return max page number
-     * URL    : localhost:8080/SpringMVCRestAPIDemo/product/search?page=***&name=****
-     * method : GET
+     * return list of products corresponding with page number and name called
+     * return: list products 
+     * URL   : localhost:8080/SpringMVCRestAPIDemo/products/page=pageNumber&name=name
+     * method: GET
      * */
     @CrossOrigin(origins="http://localhost:9000")
     @RequestMapping(value="/product/search", method=RequestMethod.GET)
@@ -164,10 +170,12 @@ public class ManageController
     }
     
     
+    
     /*
-     * return amount of product
-     * URL    : localhost:8080/SpringMVCRestAPIDemo/products/{number}
-     * method : GET
+     * return list of products corresponding with number called
+     * return: list products 
+     * URL   : localhost:8080/SpringMVCRestAPIDemo/products/{number}
+     * method: GET
      * */
     @CrossOrigin(origins="http://localhost:9000")
     @RequestMapping(value="/products/{number}", method=RequestMethod.GET)
