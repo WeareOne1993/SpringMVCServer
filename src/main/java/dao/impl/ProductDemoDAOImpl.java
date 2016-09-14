@@ -127,6 +127,7 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
             return 244;
 
         reCountListAfterAddOrUpdate(name);
+        printCountList();
         
         return 200;
     }
@@ -181,6 +182,12 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
         {
             tr = session.beginTransaction();
             ProductDemo productDemo = session.get(ProductDemo.class, id);
+            
+            if (productDemo == null)
+            {
+                return 245;
+            }
+            
             
             oldName = productDemo.getName();
             oldType = productDemo.getType();
@@ -244,6 +251,7 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
             
             reCountListAfterRemove(oldName);
             reCountListAfterAddOrUpdate(name);
+            printCountList();
             
             return 200;            
             
@@ -284,13 +292,14 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
              tr = session.beginTransaction();
              
              ProductDemo productDemo = session.get(ProductDemo.class, id);
-             String name = productDemo.getName();
-             String type = productDemo.getType();
+
              
              if (productDemo == null)
                  return 246;
              else
              {
+                 String name = productDemo.getName();
+                 String type = productDemo.getType();
                  session.delete(productDemo);
                  tr.commit();
                  
@@ -306,6 +315,7 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
                  }
                  
                  reCountListAfterRemove(name);
+                 printCountList();
                  
                  return 200;           
              }
@@ -711,10 +721,10 @@ public class ProductDemoDAOImpl implements ProductDemoDAO
     {
         System.out.println("count List Size = " + countListForSearchName.size());
         
-        for (int i = 0; i < countListForSearchName.size(); i++)
-        {
-            System.out.println("name = " + countListForSearchName.get(i).getName() + "\tsize = " + countListForSearchName.get(i).getNumber());
-        }
+//        for (int i = 0; i < countListForSearchName.size(); i++)
+//        {
+//            System.out.println("name = " + countListForSearchName.get(i).getName() + "\tsize = " + countListForSearchName.get(i).getNumber());
+//        }
         
         System.out.println("\n");
     }

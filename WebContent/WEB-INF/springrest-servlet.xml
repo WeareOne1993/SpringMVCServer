@@ -27,7 +27,8 @@ http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
 	
  	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
 	          destroy-method="close">
-		<property name="driverClass" value="com.mysql.jdbc.Driver" />
+	          
+<!-- 		<property name="driverClass" value="com.mysql.jdbc.Driver" />
 		<property name="jdbcUrl" value="jdbc:mysql://localhost:3300/newdb" />
 		<property name="user" value="root" />
 		<property name="password" value="toor" /> 
@@ -38,6 +39,22 @@ http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
 		<property name="maxPoolSize" value="500" />
 		<property name="maxIdleTime" value="60" />
 		<property name="numHelperThreads" value="10"></property>
+ -->		
+		
+		<property name="driverClass" value="net.sourceforge.jtds.jdbc.Driver" />
+		<property name="jdbcUrl" value="jdbc:jtds:sqlserver://localhost:1433/newdb" />
+		<property name="user" value="sa" />
+		<property name="password" value="root" /> 
+		
+
+		<property name="initialPoolSize" value="50" />
+		<property name="minPoolSize" value="50" />
+		<property name="maxPoolSize" value="500" />
+		<property name="maxIdleTime" value="60" />
+		<property name="acquireIncrement" value="20" />
+		<property name="numHelperThreads" value="20"></property>
+		<property name="maxStatementsPerConnection" value="50"></property>
+		
 <!-- 		<property name="maxStatements" value="1"/>  -->
 	</bean>	 
 
@@ -72,9 +89,9 @@ http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
 		</property>
 		<property name="hibernateProperties">
 			<props>
-				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
-<!--  				<prop key="hibernate.show_sql">true</prop>
-				<prop key="hibernate.format_sql">true</prop>  -->
+				<prop key="hibernate.dialect">org.hibernate.dialect.SQLServer2008Dialect</prop>
+  				<prop key="hibernate.show_sql">false</prop>
+		<!-- 	<prop key="hibernate.format_sql">true</prop>  -->
 			</props>
 		</property>
 	</bean>
